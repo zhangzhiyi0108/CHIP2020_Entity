@@ -1,0 +1,6 @@
+#Python3
+tqdm
+pytorch-crf==0.4.0
+torch
+dynamic_yaml
+torchtext
