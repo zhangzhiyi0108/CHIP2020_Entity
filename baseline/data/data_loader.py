@@ -3,7 +3,7 @@
 # @File     : data_loader
 # @Author   : 张志毅
 # @Time     : 2020/9/12 19:14
-from beasline.config.config import config, device
+from baseline.config.config import config, device
 from utils.log import logger
 from torchtext.data import Field, BucketIterator, Example, Dataset
 
