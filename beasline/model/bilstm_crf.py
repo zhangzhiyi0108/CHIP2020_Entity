@@ -8,7 +8,6 @@ import torch
 import torch.nn as nn
 from torchcrf import CRF
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
-from common.model.common_model import CommonModel
 from utils.log import logger
 
 
