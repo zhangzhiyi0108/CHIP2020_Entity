@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # @File     : base_module
-# @Author   : LiuYan
-# @Time     : 2020/8/23 18:34
+# @Author   : 张志毅
+# @Time     : 2020/9/12 19:14
 
 import abc
 import torch.nn as nn

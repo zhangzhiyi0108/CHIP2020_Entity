@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # @File     : common_load_config
-# @Author   : LiuYan
-# @Time     : 2020/8/25 15:57
-
+# @Author   : 张志毅
+# @Time     : 2020/9/12 19:14
 import torch
 import abc
 import dynamic_yaml

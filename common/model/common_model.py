@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # @File     : common_model
-# @Author   : LiuYan
-# @Time     : 2020/8/25 19:53
+# @Author   : 张志毅
+# @Time     : 2020/9/12 19:14
 
 import abc
 from base.model.base_model import BaseModel

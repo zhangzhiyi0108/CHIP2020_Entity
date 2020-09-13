@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # @File     : common_data_loader
-# @Author   : LiuYan
-# @Time     : 2020/8/25 15:29
-
+# @Author   : 张志毅
+# @Time     : 2020/9/12 19:14
 import abc
 from torchtext.data import Field, BucketIterator
 from torchtext.datasets import SequenceTaggingDataset
