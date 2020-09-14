@@ -5,11 +5,60 @@
 # @Time     : 2020/9/12 19:14
 import torch
 
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 default_config = {
+    'model_name': 'TransformerEncoderModel',
     'train_path' : '../../data/train_data.txt',
     'dev_path' : '../../data/val_data.txt',
+    'test_path': '../../data/test1.txt',
+    'vector_path': 'D:\Python\WorkSpace\zutnlp\\bertvec\\bert_vectors_768.txt',
+    'vocab_path': '../data/vocab/entity_vocab.txt',  # ['vocab/task1_vocab.txt', 'vocab/task1_vocab.val.txt']
+    'save_model_path': '../model/save_model/{}/',
+    'result_path': '../result/{}/',
+    'is_bioes' : False,
+    # Baseline Config
+    'tag_type': 'BME_SO',  # BIO or BME_SO
+    'use_cuda': False,
+    'epoch': 100,
+    'batch_size': 2,
+    'learning_rate': 1e-4,
+    'num_layers': 2,
+    'pad_index': 1,
+    'dropout': 0.5,  # the dropout value
+    'embedding_dim': 768,  # embedding dimension     词嵌入: BERT_768 Random_300
+    'hidden_dim': 300,
+    'use_vectors': True,
+    # 'vector_win_path': 'D:/ZUTNLP/zutnlp/medical/baidubaike/baidubaike.bigram-char',
+    'vector_win_path': 'D:/ZUTNLP/data/word2vec/bertvec/bert_vectors_768.txt',
+    # 'vector_linux_path': '/home/zutnlp/liuyan/CCKS_EE/vector/baidubaike.bigram_char',
+    'vector_linux_path': '/home/zutnlp/data/bertvec/bert_vectors_768.txt',
+
+    # TransformerEncoder Config
+    'n_hid': 200,  # the dimension of the feedforward network model in nn.TransformerEncoder
+    'n_layers': 2,  # the number of nn.TransformerEncoderLayer in nn.TransformerEncoder
+    'n_head': 2,  # the number of heads in the multiheadattention models
+
+    # CNN Config
+    'chanel_num': 1,
+    'filter_num': 100,
+
+    # Attn Config
+    'use_attn': False,
+    'key_dim': 64,
+    'val_dim': 64,
+    'num_heads': 3,
+    'attn_dropout': 0.5,
+
+    # FlatLattice Config
+    'bi_gram_embed_dim': 150,
+    'lattice_embed_dim': 150,
+
+    # RefactorLoss Config
+    'use_dae': False,
+    'dae_lambda': 1.2,
+    'use_dice': False,
+    'dice_lambda': 0.01,
 }
 
 class Config():
