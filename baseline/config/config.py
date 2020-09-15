@@ -5,7 +5,7 @@
 # @Time     : 2020/9/12 19:14
 import torch
 
-DEVICE = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
+DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 default_config = {
     'experiment_name': 'test',
@@ -13,7 +13,6 @@ default_config = {
     'train_path' : '../../data/train_data.txt',
     'dev_path' : '../../data/val_data.txt',
     'test_path': '../../data/test1.txt',
-    'vector_path': 'D:\Python\WorkSpace\zutnlp\\bertvec\\bert_vectors_768.txt',
     'vocab_path': '../data/vocab/entity_vocab.txt',  # ['vocab/task1_vocab.txt', 'vocab/task1_vocab.val.txt']
     'save_model_path': '../model/save_model/',
     'result_path': '../result/',
@@ -22,7 +21,7 @@ default_config = {
     'tag_type': 'BME_SO',  # BIO or BME_SO
     'use_cuda': False,
     'epoch': 100,
-    'batch_size': 16,
+    'batch_size': 4,
     'learning_rate': 1e-4,
     'num_layers': 2,
     'pad_index': 1,
@@ -30,9 +29,7 @@ default_config = {
     'embedding_dim': 300,  # embedding dimension     词嵌入: BERT_768 Random_300
     'hidden_dim': 300,
     'use_vectors': False,
-    # 'vector_win_path': 'D:/ZUTNLP/zutnlp/medical/baidubaike/baidubaike.bigram-char',
-    'vector_win_path': 'D:/ZUTNLP/data/word2vec/bertvec/bert_vectors_768.txt',
-    # 'vector_linux_path': '/home/zutnlp/liuyan/CCKS_EE/vector/baidubaike.bigram_char',
+    'vector_path': 'D:\Python\WorkSpace\zutnlp\\bertvec\\bert_vectors_768.txt',
     'vector_linux_path': '/home/zutnlp/data/bertvec/bert_vectors_768.txt',
 
     # TransformerEncoder Config

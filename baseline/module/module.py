@@ -301,7 +301,6 @@ class CHIP2020_NER():
             line = line
         return line
 
-
 if __name__ == '__main__':
     CHIP2020_NER = CHIP2020_NER()
     CHIP2020_NER.train()
