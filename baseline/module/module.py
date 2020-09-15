@@ -77,12 +77,13 @@ class CHIP2020_NER():
                 loss.backward()
                 optimizer.step()
 
-            prf_dict = self.evaluate()
+            entity_prf_dict, prf_dict = self.evaluate()
             lable_report = prf_dict['weighted avg']
-            f1 = lable_report['f1-score']
-            p = lable_report['precision']
-            r = lable_report['recall']
-            logger.info('precision: {:.4f} recall: {:.4f} f1: {:.4f} loss: {}'.format(p, r, f1, acc_loss))
+            entity_report = entity_prf_dict['average']
+            f1 = entity_report['f1-score']
+            p = entity_report['precision']
+            r = entity_report['recall']
+            logger.info('epoch: {} precision: {:.4f} recall: {:.4f} f1: {:.4f} loss: {}'.format(epoch, p, r, f1, acc_loss))
             if f1 > f1_max:
                 f1_max = f1
                 p_max = p
@@ -99,7 +100,19 @@ class CHIP2020_NER():
         self.model.eval()
         tag_true_all = []
         tag_pred_all = []
-
+        entity_prf_dict={}
+        # S : 预测输出的结果
+        # G ：人工标注的正确的结果
+        entities_total = {'疾病(dis)': {'TP': 0, 'S': 0, 'G': 0, 'p': 0, 'r': 0, 'f1': 0},
+                          '临床表现(sym)': {'TP': 0, 'S': 0, 'G': 0, 'p': 0, 'r': 0, 'f1': 0},
+                          '医疗程序(pro)': {'TP': 0, 'S': 0, 'G': 0, 'p': 0, 'r': 0, 'f1': 0},
+                          '医疗设备(equ)': {'TP': 0, 'S': 0, 'G': 0, 'p': 0, 'r': 0, 'f1': 0},
+                          '药物(dru)': {'TP': 0, 'S': 0, 'G': 0, 'p': 0, 'r': 0, 'f1': 0},
+                          '医学检验项目(ite)': {'TP': 0, 'S': 0, 'G': 0, 'p': 0, 'r': 0, 'f1': 0},
+                          '身体(bod)': {'TP': 0, 'S': 0, 'G': 0, 'p': 0, 'r': 0, 'f1': 0},
+                          '科室(dep)': {'TP': 0, 'S': 0, 'G': 0, 'p': 0, 'r': 0, 'f1': 0},
+                          '微生物类(mic)': {'TP': 0, 'S': 0, 'G': 0, 'p': 0, 'r': 0, 'f1': 0}
+                          }
         model = self.model
         for index, iter in enumerate(tqdm(self.dev_iter)):
             if iter.tag.shape[1] == self.config.batch_size:
@@ -118,13 +131,120 @@ class CHIP2020_NER():
                     tag_true_all.extend(tag_true)
                     tag_pred = [self.tag_vocab.itos[k] for k in result_list]
                     tag_pred_all.extend(tag_pred)
+                    entities = self._evaluate(sentence=sentence, tag_true=tag_true, tag_pred=tag_pred)
+                    assert len(entities_total) == len(entities), 'entities_total: {} != entities: {}'.format(
+                        len(entities_total), len(entities))
+                    for entity in entities_total:
+                        entities_total[entity]['TP'] += entities[entity]['TP']
+                        entities_total[entity]['S'] += entities[entity]['S']
+                        entities_total[entity]['G'] += entities[entity]['G']
+        TP = 0
+        S = 0
+        G = 0
+        print('\n--------------------------------------------------')
+        print('\tp\t\t\tr\t\t\tf1\t\t\tlabel_type')
+        for entity in entities_total:
+            entities_total[entity]['p'] = entities_total[entity]['TP'] / entities_total[entity]['S'] \
+                if entities_total[entity]['S'] != 0 else 0
+            entities_total[entity]['r'] = entities_total[entity]['TP'] / entities_total[entity]['G'] \
+                if entities_total[entity]['G'] != 0 else 0
+            entities_total[entity]['f1'] = 2 * entities_total[entity]['p'] * entities_total[entity]['r'] / (
+                    entities_total[entity]['p'] + entities_total[entity]['r']) \
+                if entities_total[entity]['p'] + entities_total[entity]['r'] != 0 else 0
+            print('\t{:.3f}\t\t{:.3f}\t\t{:.3f}\t\t{}'.format(entities_total[entity]['p'], entities_total[entity]['r'],
+                                                              entities_total[entity]['f1'], entity))
+            entity_dict = {'precision': entities_total[entity]['p'], 'recall': entities_total[entity]['r'],
+                           'f1-score': entities_total[entity]['f1'], 'support': ''}
+            entity_prf_dict[entity] = entity_dict
+            TP += entities_total[entity]['TP']
+            S += entities_total[entity]['S']
+            G += entities_total[entity]['G']
+        p = TP / S if S != 0 else 0
+        r = TP / G if G != 0 else 0
+        f1 = 2 * p * r / (p + r) if p + r != 0 else 0
+        print('\t{:.3f}\t\t{:.3f}\t\t{:.3f}\t\taverage'.format(p, r, f1))
+        print('--------------------------------------------------')
+        entity_prf_dict['average'] = {'precision': p, 'recall': r, 'f1-score': f1, 'support': ''}
+
         labels = []
         for index, label in enumerate(self.tag_vocab.itos):
             labels.append(label)
         labels.remove('O')
         prf_dict = classification_report(tag_true_all, tag_pred_all, labels=labels, output_dict=True)
-        print(classification_report(tag_true_all, tag_pred_all, labels=labels))
-        return prf_dict
+        # print(classification_report(tag_true_all, tag_pred_all, labels=labels))
+        return entity_prf_dict, prf_dict
+
+    def _evaluate(self, sentence=None, tag_true=None, tag_pred=None):
+        """
+        先对true进行还原成 [{}] 再对pred进行还原成 [{}]
+        :param tag_true: list[]
+        :param tag_pred: list[]
+        :return:
+        """
+        true_list = self._build_list_dict(len(tag_true), tag_true, sentence)
+        pred_list = self._build_list_dict(len(tag_pred), tag_pred, sentence)
+        entities = {      '疾病(dis)': {'TP': 0, 'S': 0, 'G': 0},
+                          '临床表现(sym)': {'TP': 0, 'S': 0, 'G': 0},
+                          '医疗程序(pro)': {'TP': 0, 'S': 0, 'G': 0},
+                          '医疗设备(equ)': {'TP': 0, 'S': 0, 'G': 0},
+                          '药物(dru)': {'TP': 0, 'S': 0, 'G': 0},
+                          '医学检验项目(ite)': {'TP': 0, 'S': 0, 'G': 0},
+                          '身体(bod)': {'TP': 0, 'S': 0, 'G': 0},
+                          '科室(dep)': {'TP': 0, 'S': 0, 'G': 0},
+                          '微生物类(mic)': {'TP': 0, 'S': 0, 'G': 0}
+                          }
+        for true in true_list:
+            label_type = true['label_type']
+            entities[label_type]['G'] += 1
+        for pred in pred_list:
+            label_type = pred['label_type']
+            label_name = pred['name']
+            label_start = pred['start_pos']
+            label_end = pred['end_pos']
+            entities[label_type]['S'] += 1
+            for true in true_list:
+                if label_type == true['label_type'] and label_name == true['name'] and label_start == true[
+                    'start_pos'] and label_end == true['end_pos']:
+                    entities[label_type]['TP'] += 1
+        # self.record_pred_info(sentence=sentence, true_list=true_list, pred_list=pred_list,
+        #                       path='./result/classification_report/{}/pred_info.txt'.format(config.experiment_name))
+        return entities
+
+    def _build_list_dict(self, _len, _list, sentence):
+        build_list = []
+        tag_dict = {      'dis':'疾病(dis)',
+                          'sym':'临床表现(sym)',
+                          'pro':'医疗程序(pro)',
+                          'equ':'医疗设备(equ)',
+                          'dru':'药物(dru)' ,
+                          'ite':'医学检验项目(ite)' ,
+                          'bod':'身体(bod)',
+                          'dep':'科室(dep)',
+                          'mic':'微生物类(mic)'
+                    }
+        i = 0
+
+        while i<_len:
+            if _list[i][0] == 'B':
+                label_type = _list[i][2:]
+                start_pos = i
+                end_pos = start_pos
+                if end_pos != _len-1:
+                    if end_pos+1<_len and _list[end_pos+1][0] != 'I':
+                        end_pos+=1
+                    else:
+                        while end_pos+1 < _len and _list[end_pos+1][0] == 'I' and _list[end_pos+1][2:] == label_type:
+                            end_pos += 1
+                build_list.append({'name': ''.join(sentence[start_pos:end_pos+1]), 'start_pos':start_pos, 'end_pos':end_pos, 'label_type': tag_dict[label_type]})
+                i = end_pos+1
+            else:
+                i+=1
+        result = []
+        for dict1 in build_list:
+            if dict1 not in result:
+                result.append(dict1)
+        return result
+
 
     def predict(self, path=None, model_name=None, save_path=None):
         if path is None:
