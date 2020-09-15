@@ -5,7 +5,7 @@
 # @Time     : 2020/9/12 19:14
 import torch
 
-DEVICE = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
+DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 default_config = {
     'experiment_name': 'test',
@@ -23,7 +23,7 @@ default_config = {
     'use_cuda': False,
     'epoch': 100,
     'batch_size': 16,
-    'learning_rate': 1e-4,
+    'learning_rate': 2e-4,
     'num_layers': 2,
     'pad_index': 1,
     'dropout': 0.5,  # the dropout value
