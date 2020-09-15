@@ -62,7 +62,7 @@ class CHIP2020_NER():
         optimizer = optim.Adam(model.parameters(), lr=self.config.learning_rate, weight_decay=1e-5)
         f1_max = 0
         p_max = 0
-        r_max =  0
+        r_max = 0
         logger.info('Beginning train ...')
         for epoch in range(config.epoch):
             model.train()
@@ -86,7 +86,7 @@ class CHIP2020_NER():
             if f1 > f1_max:
                 f1_max = f1
                 p_max = p
-                r_max= r
+                r_max = r
                 best_epoch = epoch + 1
                 logger.info('save best model...')
                 torch.save(self.model.state_dict(),
@@ -122,12 +122,11 @@ class CHIP2020_NER():
         for index, label in enumerate(self.tag_vocab.itos):
             labels.append(label)
         labels.remove('O')
-        prf_dict = classification_report(tag_true_all, tag_pred_all, labels=labels,output_dict=True)
+        prf_dict = classification_report(tag_true_all, tag_pred_all, labels=labels, output_dict=True)
         print(classification_report(tag_true_all, tag_pred_all, labels=labels))
         return prf_dict
 
-
-    def predict(self, path = None, model_name=None, save_path=None):
+    def predict(self, path=None, model_name=None, save_path=None):
         if path is None:
             path = config.test_path
             model_name = self.config.save_model_path + 'model_{}.pkl'.format(self.config.experiment_name)
@@ -145,9 +144,11 @@ class CHIP2020_NER():
             with open(save_path, 'w', encoding='utf-8') as fw:
                 lines = f.readlines()
                 for line in tqdm(lines):
-                    text = torch.tensor(numpy.array([word_vocab.stoi[word] for word in line],dtype='int64')).unsqueeze(1).expand(len(line),self.config.batch_size).to(DEVICE)
-                    text_len = torch.tensor(numpy.array([len(line)], dtype='int64')).expand(self.config.batch_size).to(DEVICE)
-                    result = model(text,text_len)[0]
+                    text = torch.tensor(numpy.array([word_vocab.stoi[word] for word in line], dtype='int64')).unsqueeze(
+                        1).expand(len(line), self.config.batch_size).to(DEVICE)
+                    text_len = torch.tensor(numpy.array([len(line)], dtype='int64')).expand(self.config.batch_size).to(
+                        DEVICE)
+                    result = model(text, text_len)[0]
                     tag_pred = [tag_vocab.itos[k] for k in result]
                     sentence = line.replace('\n', '')
                     result_line = self._bulid_result_line(sentence, tag_pred)
@@ -155,30 +156,33 @@ class CHIP2020_NER():
             fw.close()
         f.close()
 
-    def _bulid_result_line(self,sentence, tag_pred ):
+    def _bulid_result_line(self, sentence, tag_pred):
         result_list = []
         for index, tag in zip(range(len(tag_pred)), tag_pred):
             if tag[0] == 'B':
                 start = index
                 end = index
                 label_type = tag[2:]
-                if end != len(tag_pred)-1:
-                    while tag_pred[end+1][0] == 'I' and tag_pred[end+1][2:] == label_type:
+                if end != len(tag_pred) - 1:
+                    while tag_pred[end + 1][0] == 'I' and tag_pred[end + 1][2:] == label_type:
                         end += 1
-                result_list.append({'start':start,
-                                    'end':end,
+                result_list.append({'start': start,
+                                    'end': end,
                                     'lable_type': label_type
 
-                })
+                                    })
         line = ''.join(sentence)
         if len(result_list) != 0:
             for index, item in enumerate(result_list):
-                line = line + '|||' + str(result_list[index]['start']) + '    ' + str(result_list[index]['end']) + '    ' + str(result_list[index]['lable_type'])
-            line  = line + '|||'
+                line = line + '|||' + str(result_list[index]['start']) + '    ' + str(
+                    result_list[index]['end']) + '    ' + str(result_list[index]['lable_type'])
+            line = line + '|||'
         else:
             line = line
-        return  line
+        return line
+
+
 if __name__ == '__main__':
     CHIP2020_NER = CHIP2020_NER()
-    # CHIP2020_NER.train()
+    CHIP2020_NER.train()
     CHIP2020_NER.predict()
