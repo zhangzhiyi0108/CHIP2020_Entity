@@ -4,17 +4,13 @@
 # @Author   : 张志毅
 # @Time     : 2020/9/13 15:39
 
-import codecs
-import os
-import sys
-import json
 import warnings
+
 import numpy
 import torch
 import torch.optim as optim
-from tqdm import tqdm
 from sklearn.metrics import classification_report
-from sklearn.model_selection import train_test_split
+from tqdm import tqdm
 
 from baseline.config.config import config, DEVICE
 from baseline.data.data_loader import tool
@@ -41,7 +37,7 @@ class CHIP2020_NER():
         self.test_iter = None
         self.unlabeled_iter = None
         self.model_name = config.model_name
-        # self.experiment_name = config.experiment_name
+        self.experiment_name = config.experiment_name
 
     def init_model(self, config=None, word_vocab=None, vocab_size=None, tag_num=None, vectors_path=None):
         model_name = config.model_name
@@ -60,44 +56,37 @@ class CHIP2020_NER():
         self.tag_vocab = tool.get_tag_vocab(self.train_data, self.dev_data)
         self.train_iter = tool.get_iterator(self.train_data, batch_size=config.batch_size)
         self.dev_iter = tool.get_iterator(self.dev_data, batch_size=config.batch_size)
-
-        # if self.model_name == 'TransformerEncoderModel':
-        #         #     self.model = TransformerEncoderModel(config, self.word_vocab,len(self.word_vocab), len(self.tag_vocab),config.vector_path).to(DEVICE)
         model = self.init_model(self.config, self.word_vocab, len(self.word_vocab), len(self.tag_vocab),
                                 config.vector_path)
         self.model = model
         optimizer = optim.Adam(model.parameters(), lr=self.config.learning_rate, weight_decay=1e-5)
-        p_max = 0
-        r_max = 0
         f1_max = 0
-        best_epoch = -1
+        p_max = 0
+        r_max =  0
         logger.info('Beginning train ...')
-
         for epoch in range(config.epoch):
             model.train()
             acc_loss = 0
-            # print(optimizer.param_groups[0]['lr'])
-            # tool.adjust_learning_rate(optimizer, epoch + 1)
             for item in tqdm(self.train_iter):
                 optimizer.zero_grad()
                 tag = item.tag
                 text = item.text[0]
                 text_len = item.text[1]
                 loss = self.model.loss(text, text_len, tag)
-                # refactor_loss = loss['refactor_loss']
-                # total_loss = self.acc_total_loss(total_loss, loss)
                 acc_loss += loss.view(-1).cpu().data.tolist()[0]
                 loss.backward()
                 optimizer.step()
 
-            p, r, f1 = self.evaluate()
+            prf_dict = self.evaluate()
+            lable_report = prf_dict['weighted avg']
+            f1 = lable_report['f1-score']
+            p = lable_report['precision']
+            r = lable_report['recall']
             logger.info('precision: {:.4f} recall: {:.4f} f1: {:.4f} loss: {}'.format(p, r, f1, acc_loss))
-
-            # scheduler.step(f1)
             if f1 > f1_max:
-                p_max = p
-                r_max = r
                 f1_max = f1
+                p_max = p
+                r_max= r
                 best_epoch = epoch + 1
                 logger.info('save best model...')
                 torch.save(self.model.state_dict(),
@@ -133,16 +122,63 @@ class CHIP2020_NER():
         for index, label in enumerate(self.tag_vocab.itos):
             labels.append(label)
         labels.remove('O')
-        p, r, f1 = classification_report(tag_true_all, tag_pred_all, labels=labels)
-        return p, r, f1
-
-    def acc_total_loss(self, total_loss=None, loss=None):
-        for loss_name in loss:
-            if loss[loss_name] is not None:
-                total_loss[loss_name] += loss[loss_name].view(-1).cpu().data.tolist()[0]
-        return total_loss
+        prf_dict = classification_report(tag_true_all, tag_pred_all, labels=labels,output_dict=True)
+        print(classification_report(tag_true_all, tag_pred_all, labels=labels))
+        return prf_dict
 
 
+    def predict(self, path = None, model_name=None, save_path=None):
+        if path is None:
+            path = config.test_path
+            model_name = self.config.save_model_path + 'model_{}.pkl'.format(self.config.experiment_name)
+            save_path = self.config.result_path + 'result_{}.txt'.format(self.config.experiment_name)
+        train_data = tool.load_data(config.train_path, config.is_bioes)
+        dev_data = tool.load_data(config.dev_path, config.is_bioes)
+        logger.info('Finished load data...')
+        word_vocab = tool.get_text_vocab(train_data, dev_data)
+        tag_vocab = tool.get_tag_vocab(train_data, dev_data)
+        logger.info('Finished build vocab...')
+
+        model = self.init_model(self.config, word_vocab, len(word_vocab), len(tag_vocab), config.vector_path)
+        model.load_state_dict(torch.load(model_name))
+        with open(path, 'r', encoding='utf -8') as f:
+            with open(save_path, 'w', encoding='utf-8') as fw:
+                lines = f.readlines()
+                for line in tqdm(lines):
+                    text = torch.tensor(numpy.array([word_vocab.stoi[word] for word in line],dtype='int64')).unsqueeze(1).expand(len(line),self.config.batch_size).to(DEVICE)
+                    text_len = torch.tensor(numpy.array([len(line)], dtype='int64')).expand(self.config.batch_size).to(DEVICE)
+                    result = model(text,text_len)[0]
+                    tag_pred = [tag_vocab.itos[k] for k in result]
+                    sentence = line.replace('\n', '')
+                    result_line = self._bulid_result_line(sentence, tag_pred)
+                    fw.write(result_line + '\n')
+            fw.close()
+        f.close()
+
+    def _bulid_result_line(self,sentence, tag_pred ):
+        result_list = []
+        for index, tag in zip(range(len(tag_pred)), tag_pred):
+            if tag[0] == 'B':
+                start = index
+                end = index
+                label_type = tag[2:]
+                if end != len(tag_pred)-1:
+                    while tag_pred[end+1][0] == 'I' and tag_pred[end+1][2:] == label_type:
+                        end += 1
+                result_list.append({'start':start,
+                                    'end':end,
+                                    'lable_type': label_type
+
+                })
+        line = ''.join(sentence)
+        if len(result_list) != 0:
+            for index, item in enumerate(result_list):
+                line = line + '|||' + str(result_list[index]['start']) + '    ' + str(result_list[index]['end']) + '    ' + str(result_list[index]['lable_type'])
+            line  = line + '|||'
+        else:
+            line = line
+        return  line
 if __name__ == '__main__':
     CHIP2020_NER = CHIP2020_NER()
-    CHIP2020_NER.train()
+    # CHIP2020_NER.train()
+    CHIP2020_NER.predict()

@@ -146,6 +146,7 @@ class EEDataset(Dataset):
             for line in lines:
                 text_list, tag_list = get_list(line)
                 examples.append(Example.fromlist((text_list, tag_list), fields))
+        f.close()
         super(EEDataset, self).__init__(examples, fields, **kwargs)
 
 class Tool():
