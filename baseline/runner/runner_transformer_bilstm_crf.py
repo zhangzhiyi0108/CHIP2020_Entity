@@ -6,10 +6,7 @@
 
 import torch
 import warnings
-from tqdm import tqdm
-import torch.optim as optim
-from sklearn.metrics import classification_report
-from utils.log import logger
+
 from baseline.module.module import CHIP2020_NER
 warnings.filterwarnings('ignore')
 if __name__ == '__main__':

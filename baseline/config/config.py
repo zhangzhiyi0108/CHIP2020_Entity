@@ -21,16 +21,16 @@ default_config = {
     'tag_type': 'BME_SO',  # BIO or BME_SO
     'use_cuda': False,
     'epoch': 100,
-    'batch_size': 32,
+    'batch_size': 16,
     'learning_rate': 2e-4,
     'num_layers': 2,
     'pad_index': 1,
     'dropout': 0.5,  # the dropout value
-    'embedding_dim': 300,  # embedding dimension     词嵌入: BERT_768 Random_300
+    'embedding_dim': 768,  # embedding dimension     词嵌入: BERT_768 Random_300
     'hidden_dim': 300,
-    'use_vectors': False,
-    'vector_path': 'D:\Python\WorkSpace\zutnlp\\bertvec\\bert_vectors_768.txt',
-    'vector_linux_path': '/home/zutnlp/data/bertvec/bert_vectors_768.txt',
+    'use_vectors': True,
+    # 'vector_path': 'D:\Python\WorkSpace\zutnlp\\bertvec\\bert_vectors_768.txt',
+    'vector_path': '/home/zutnlp/data/bertvec/bert_vectors_768.txt',
 
     # TransformerEncoder Config
     'n_hid': 200,  # the dimension of the feedforward network model in nn.TransformerEncoder
