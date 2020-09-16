@@ -4,7 +4,6 @@
 # @Author   : 张志毅
 # @Time     : 2020/9/12 19:14
 
-import torch
 import warnings
 
 from baseline.module.module import CHIP2020_NER
