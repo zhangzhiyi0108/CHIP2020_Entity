@@ -21,8 +21,8 @@ default_config = {
     'tag_type': 'BME_SO',  # BIO or BME_SO
     'use_cuda': False,
     'epoch': 100,
-    'batch_size': 32,
-    'learning_rate': 2e-4,
+    'batch_size': 4,
+    'learning_rate': 1e-4,
     'num_layers': 2,
     'pad_index': 1,
     'dropout': 0.5,  # the dropout value
