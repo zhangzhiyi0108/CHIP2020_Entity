@@ -5,7 +5,7 @@
 # @Time     : 2020/9/12 19:14
 import torch
 
-DEVICE = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
+DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 default_config = {
     'experiment_name': 'test',
