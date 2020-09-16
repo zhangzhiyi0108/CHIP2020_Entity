@@ -10,7 +10,7 @@ DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 default_config = {
     'experiment_name': 'test',
     'model_name': 'TransformerEncoderModel',
-    'train_path' : '../../data/train_data.txt',
+    'train_path' : '../../data/train_data_all.txt',
     'dev_path' : '../../data/val_data.txt',
     'test_path': '../../data/test1.txt',
     'vocab_path': '../data/vocab/entity_vocab.txt',  # ['vocab/task1_vocab.txt', 'vocab/task1_vocab.val.txt']
@@ -21,7 +21,7 @@ default_config = {
     'tag_type': 'BME_SO',  # BIO or BME_SO
     'use_cuda': False,
     'epoch': 100,
-    'batch_size': 16,
+    'batch_size': 4,
     'learning_rate': 2e-4,
     'num_layers': 2,
     'pad_index': 1,

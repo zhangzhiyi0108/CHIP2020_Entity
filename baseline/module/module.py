@@ -77,17 +77,22 @@ class CHIP2020_NER():
                 loss.backward()
                 optimizer.step()
 
-            entity_prf_dict, prf_dict = self.evaluate()
-            lable_report = prf_dict['weighted avg']
-            entity_report = entity_prf_dict['average']
-            f1 = entity_report['f1-score']
-            p = entity_report['precision']
-            r = entity_report['recall']
-            logger.info('epoch: {} precision: {:.4f} recall: {:.4f} f1: {:.4f} loss: {}'.format(epoch, p, r, f1, acc_loss))
-            if f1 > f1_max:
-                f1_max = f1
-                p_max = p
-                r_max = r
+            entity_micro_prf_dict, prf_dict = self.evaluate()
+            lable_report = prf_dict['micro avg']
+            entity_report = entity_micro_prf_dict['micro avg']
+            entity_f1 = entity_report['f1-score']
+            entity_p = entity_report['precision']
+            entity_r = entity_report['recall']
+
+            # lable_f1 = lable_report['f1-score']
+            # lable_p = lable_report['precision']
+            # lable_r = lable_report['recall']
+
+            logger.info('epoch: {} precision: {:.4f} recall: {:.4f} f1: {:.4f} loss: {}'.format(epoch+1, entity_p, entity_r, entity_f1, acc_loss))
+            if entity_f1 > f1_max:
+                f1_max = entity_f1
+                p_max = entity_p
+                r_max = entity_r
                 best_epoch = epoch + 1
                 logger.info('save best model...')
                 torch.save(self.model.state_dict(),
@@ -100,7 +105,7 @@ class CHIP2020_NER():
         self.model.eval()
         tag_true_all = []
         tag_pred_all = []
-        entity_prf_dict={}
+        entity_micro_prf_dict={}
         # S : 预测输出的结果
         # G ：人工标注的正确的结果
         entities_total = {'疾病(dis)': {'TP': 0, 'S': 0, 'G': 0, 'p': 0, 'r': 0, 'f1': 0},
@@ -141,6 +146,9 @@ class CHIP2020_NER():
         TP = 0
         S = 0
         G = 0
+        macro_p = 0
+        macro_r = 0
+        macro_f1 = 0
         print('\n--------------------------------------------------')
         print('\tp\t\t\tr\t\t\tf1\t\t\tlabel_type')
         for entity in entities_total:
@@ -155,16 +163,25 @@ class CHIP2020_NER():
                                                               entities_total[entity]['f1'], entity))
             entity_dict = {'precision': entities_total[entity]['p'], 'recall': entities_total[entity]['r'],
                            'f1-score': entities_total[entity]['f1'], 'support': ''}
-            entity_prf_dict[entity] = entity_dict
+            entity_micro_prf_dict[entity] = entity_dict
             TP += entities_total[entity]['TP']
             S += entities_total[entity]['S']
             G += entities_total[entity]['G']
+            macro_p = entities_total[entity]['p']
+            macro_r = entities_total[entity]['r']
+            macro_f1 = entities_total[entity]['f1']
+
+        macro_p_new = macro_p / len(entities_total)
+        macro_r_new = macro_r / len(entities_total)
+        macro_f1_new = macro_f1 / len(entities_total)
         p = TP / S if S != 0 else 0
         r = TP / G if G != 0 else 0
         f1 = 2 * p * r / (p + r) if p + r != 0 else 0
-        print('\t{:.3f}\t\t{:.3f}\t\t{:.3f}\t\taverage'.format(p, r, f1))
+        print('\t{:.3f}\t\t{:.3f}\t\t{:.3f}\t\tmacro avg'.format(macro_p_new, macro_r_new, macro_f1_new))
+
+        print('\t{:.3f}\t\t{:.3f}\t\t{:.3f}\t\tmicro avg'.format(p, r, f1))
         print('--------------------------------------------------')
-        entity_prf_dict['average'] = {'precision': p, 'recall': r, 'f1-score': f1, 'support': ''}
+        entity_micro_prf_dict['micro avg'] = {'precision': p, 'recall': r, 'f1-score': f1, 'support': ''}
 
         labels = []
         for index, label in enumerate(self.tag_vocab.itos):
@@ -172,7 +189,7 @@ class CHIP2020_NER():
         labels.remove('O')
         prf_dict = classification_report(tag_true_all, tag_pred_all, labels=labels, output_dict=True)
         # print(classification_report(tag_true_all, tag_pred_all, labels=labels))
-        return entity_prf_dict, prf_dict
+        return entity_micro_prf_dict, prf_dict
 
     def _evaluate(self, sentence=None, tag_true=None, tag_pred=None):
         """
@@ -247,6 +264,7 @@ class CHIP2020_NER():
 
 
     def predict(self, path=None, model_name=None, save_path=None):
+        logger.info('Start predict data...')
         if path is None:
             path = config.test_path
             model_name = self.config.save_model_path + 'model_{}.pkl'.format(self.config.experiment_name)
@@ -275,7 +293,7 @@ class CHIP2020_NER():
                     fw.write(result_line + '\n')
             fw.close()
         f.close()
-
+        logger.info('Finished lpredict data...')
     def _bulid_result_line(self, sentence, tag_pred):
         result_list = []
         for index, tag in zip(range(len(tag_pred)), tag_pred):
