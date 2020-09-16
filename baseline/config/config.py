@@ -10,7 +10,7 @@ DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 default_config = {
     'experiment_name': 'test',
     'model_name': 'TransformerEncoderModel',
-    'train_path' : '../../data/train_data_all.txt',
+    'train_path' : '../../data/train_data.txt',
     'dev_path' : '../../data/val_data.txt',
     'test_path': '../../data/test1.txt',
     'vocab_path': '../data/vocab/entity_vocab.txt',  # ['vocab/task1_vocab.txt', 'vocab/task1_vocab.val.txt']
