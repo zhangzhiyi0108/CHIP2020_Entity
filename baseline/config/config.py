@@ -12,7 +12,7 @@ default_config = {
     'model_name': 'TransformerEncoderModel',
     'train_path' : '../../data/train_data.txt',
     'dev_path' : '../../data/val_data.txt',
-    'test_path': '../../data/test1.txt',
+    'test_path': '../../data/test2.txt',
     'vocab_path': '../data/vocab/entity_vocab.txt',  # ['vocab/task1_vocab.txt', 'vocab/task1_vocab.val.txt']
     'save_model_path': '../model/save_model/',
     'result_path': '../result/',

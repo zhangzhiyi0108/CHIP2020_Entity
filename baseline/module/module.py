@@ -268,7 +268,7 @@ class CHIP2020_NER():
         if path is None:
             path = config.test_path
             model_name = self.config.save_model_path + 'model_{}.pkl'.format(self.config.experiment_name)
-            save_path = self.config.result_path + 'result_all_{}.txt'.format(self.config.experiment_name)
+            save_path = self.config.result_path + 'result.txt'
         train_data = tool.load_data(config.train_path, config.is_bioes)
         dev_data = tool.load_data(config.dev_path, config.is_bioes)
         logger.info('Finished load data...')
@@ -321,5 +321,5 @@ class CHIP2020_NER():
 
 if __name__ == '__main__':
     CHIP2020_NER = CHIP2020_NER()
-    # CHIP2020_NER.train()
+    CHIP2020_NER.train()
     CHIP2020_NER.predict()
